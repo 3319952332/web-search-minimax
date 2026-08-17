@@ -51,6 +51,44 @@ pnpm add -D github:<owner>/dsh-web-search-minimax
    携带 `Authorization: Bearer <key>`。
 3. 解析响应的 `organic` 结果列表，去重后归一化为 `{ sources, truncated }`。
 
+## 网页设置卡片补丁（可选）
+
+DSH 网页 GUI 的「设置 > 插件 > 插件配置」里，搜索卡片与 settings 白名单都编译在
+两个 npm 发布包中（npx 缓存里）：
+
+- `@deepseek-ai/dsh-client-ui-settings-plugins`：前端卡片组件（原版只内置 DeepSeek 卡片）
+- `@deepseek-ai/dsh-host-apiproxy`：后端 `WEB_SETTINGS_NAMESPACES` 白名单（原版只内置 `web-search-deepseek`）
+
+官方没有 MiniMax 的卡片与白名单。若想让 MiniMax 配置卡片在 GUI 中出现、并让
+`/api/settings.*` 放行 `web-search-minimax` 命名空间，需要给这两个发布包打文本补丁。
+`patches/` 下两个脚本即为此准备（幂等，可重复运行）：
+
+| 脚本 | 作用 |
+| --- | --- |
+| `apply-minimax-search-card.ps1` | 给前端 bundle 增加「MiniMax 网页搜索」卡片，刷新浏览器即生效 |
+| `apply-minimax-settings-exposure.ps1` | 把 `web-search-minimax` 加入后端 settings 白名单，需重启 DSH 生效 |
+
+### 用法
+
+```powershell
+# 先启动过一次 dsh web（让 npx 缓存里出现对应安装包）
+powershell -NoProfile -ExecutionPolicy Bypass -File patches/apply-minimax-search-card.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File patches/apply-minimax-settings-exposure.ps1
+# 重启 DSH，再到 设置 > 插件 > 插件配置 查看卡片
+```
+
+### 注意
+
+- **平台**：脚本是 PowerShell（Windows）。补丁文本本身跨平台，但脚本里“定位 npx
+  缓存 + 扫描运行进程”用了 WMI、`LOCALAPPDATA` 等 Windows 专属能力，换 Linux/macOS
+  需改写定位逻辑（可改成 Node 脚本用 `npm config get cache` 定位）。
+- **重装会还原**：`npx --yes @deepseek-ai/dsh web` 重装会覆盖这两个发布包，补丁丢失，
+  重跑对应脚本即可（幂等，已打补丁自动跳过）。
+- **版本失配**：rc 版本变化导致替换文本不匹配时，脚本会报「未匹配」并拒绝写入，
+  需按脚本内注释更新替换文本。
+- **非必需**：如果不需要 GUI 卡片，可直接在 `settings.yaml` 里写
+  `web-search-minimax:` 段（`apiKey`/`apiKeyEnv`/`baseURL`）完成配置，无需这两个补丁。
+
 ## License
 
 MIT
