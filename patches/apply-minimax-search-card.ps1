@@ -1,4 +1,4 @@
-﻿# =====================================================================
+# =====================================================================
 #  apply-minimax-search-card.ps1
 #
 #  在 DSH 插件栏（设置 > 插件 > 插件配置）为 MiniMax 网页搜索增加配置卡片：
@@ -216,8 +216,7 @@ $steps = @(
 				}, WebSearchCard);
 				yield ctx.slots.register({
 					name: "settings.plugin.item",
-					id: "web-search-minimax",
-					order: 30,
+					key: MINIMAX_SEARCH_NS,
 					locale: NS,
 					inject: () => minimaxSearch.inject()
 				}, MiniMaxSearchCard);
