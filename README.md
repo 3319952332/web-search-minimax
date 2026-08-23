@@ -16,14 +16,34 @@ DSH 的 `ctx.web` 搜索提供方插件，直连 MiniMax coding-plan 搜索接�
 
 ## 安装
 
-通过 git 安装到 DSH 的插件目录：
+本机手工安装（与插件市场安装的插件同目录布局）：
 
-```sh
-# 以 pnpm 为例，将本仓库作为依赖安装
-pnpm add -D github:<owner>/dsh-web-search-minimax
-```
+1. 把本仓库复制为版本化目录：
+   `profiles/node_modules/dsh-web-search-minimax-<version>/`
+2. 在 `profiles/web/cordis.patch.yml` 里加一行 insert：
 
-或直接放到 DSH 插件目录（`~/.dsh/plugins/dsh-web-search-minimax`）。
+   ```yaml
+   - insert:
+       - id: web-search-minimax
+         name: dsh-web-search-minimax-1.1.0
+   ```
+
+3. （可选）把 `web` 行的搜索提供方切到 MiniMax，并停掉 DeepSeek 搜索：
+
+   ```yaml
+   - id: web
+     config:
+       searchProvider: minimax-coding-plan
+   - id: web-search-deepseek
+     disabled: true
+   ```
+
+   DeepSeek 的 `web_search` 走一次模型请求，成本高；MiniMax coding-plan 直接搜索接口
+   只花一次廉价搜索，延迟约 1 秒。关闭后 DeepSeek 卡片也会从设置页消失（其设置命名空间
+   不再被服务）。
+
+4. 重启 DSH 后刷新浏览器：`设置 > 插件 > 插件配置` 会出现「MiniMax 网页搜索」卡片，
+   可直接编辑 `baseURL` 与 API Key。
 
 ## 配置
 
@@ -51,47 +71,20 @@ pnpm add -D github:<owner>/dsh-web-search-minimax
    携带 `Authorization: Bearer <key>`。
 3. 解析响应的 `organic` 结果列表，去重后归一化为 `{ sources, truncated }`。
 
-## 网页设置卡片补丁（可选）
+## 网页设置卡片
 
-DSH 网页 GUI 的「设置 > 插件 > 插件配置」里，搜索卡片编译在
-`@deepseek-ai/dsh-client-ui-settings-plugins`（npx 安装包）中，原版只内置 DeepSeek 卡片。
+`lib/client.js` 是本插件的浏览器半边（package.json 声明 `dsh.client.platform: "web"`），
+它把「MiniMax 网页搜索」卡片注册进 `settings.plugin.item`（key = `web-search-minimax`
+命名空间），由 `@deepseek-ai/dsh-client-ui-settings-plugins` 的「插件配置」页渲染。
 
-给 MiniMax 增加配置卡片需要给这个发布包打文本补丁。`patches/` 下两个脚本：
+**不再需要任何 bundle 注入/补丁**：卡片随插件版本化目录一起分发，DSH 更新或 `npx` 重装
+只影响发布包本身，只要 patch 行还在，卡片就一直在。卡片与 DeepSeek 卡片同构（少一个
+`maxUses` 旋钮，因为 MiniMax 直接搜索接口没有每请求搜索次数上限）。
 
-| 脚本 | 作用 | 适用版本 |
-| --- | --- | --- |
-| `apply-minimax-search-card.ps1` | 给前端 bundle 增加卡片 | rc.6 / rc.7+（写法不同，见下） |
-| `apply-minimax-settings-exposure.ps1` | 把命名空间加入后端白名单 | **仅 rc.6**（rc.7+ 已自动暴露） |
-
-> **版本注意**：
-> - **rc.7+**：settings 命名空间由 `installSettingsSection` 自动暴露，不再需要白名单补丁。
->   卡片 slot 从 `list`+`id` 改为 `keyed`+`key`。
->   当前 `apply-minimax-search-card.ps1` **已按 rc.7 写法修改**（`key: MINIMAX_SEARCH_NS`）。
-> - **rc.6**：需要两个补丁都跑，卡片 slot 用 `id`（上一个 git commit 的版本）。
-
-### 用法
-
-```powershell
-# 先启动过一次 dsh web（让 npx 缓存里出现对应安装包）
-powershell -NoProfile -ExecutionPolicy Bypass -File patches/apply-minimax-search-card.ps1
-# rc.6 还需要：
-# powershell -NoProfile -ExecutionPolicy Bypass -File patches/apply-minimax-settings-exposure.ps1
-# 刷新浏览器即可在 设置 > 插件 > 插件配置 看到卡片
-```
-
-### 注意
-
-- **平台**：脚本是 PowerShell（Windows）。补丁文本本身跨平台，但脚本里"定位 npx
-  缓存 + 扫描运行进程"用了 WMI、`LOCALAPPDATA` 等 Windows 专属能力，换 Linux/macOS
-  需改写定位逻辑（可改成 Node 脚本用 `npm config get cache` 定位）。
-- **重装会还原**：`npx --yes @deepseek-ai/dsh web` 重装会覆盖发布包，补丁丢失，
-  重跑脚本即可（幂等，已打补丁自动跳过）。
-- **版本失配**：rc 版本变化导致替换文本不匹配时，脚本会报「未匹配」并拒绝写入，
-  需按脚本内注释更新替换文本。
-- **非必需**：如果不需要 GUI 卡片，可直接在 `settings.yaml` 里写
-  `web-search-minimax:` 段（`apiKey`/`apiKeyEnv`/`baseURL`）完成配置，无需补丁。
-- **本地备份**：`local-backup/` 目录下保存了本机 cordis.patch.yml 与手动插件副本，
-  供 npx 更新后恢复参考。
+> `patches/` 下两个脚本是旧版（rc.6/rc.7 时代）给 npx 安装的
+> `@deepseek-ai/dsh-client-ui-settings-plugins` 发布包打文本补丁的遗留物。
+> 新版本（0.1.1-rc.2+）里插件自带客户端半边后不再需要它们，保留仅为历史参考，
+> 请勿再运行（它们会尝试修改发布包文件）。
 
 ## License
 
