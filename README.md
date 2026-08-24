@@ -76,6 +76,27 @@ dsh-web-search-minimax → 配置」里写 JSON，例如：
 
 密钥解析优先级：`apiKey`（明文）→ credentials 服务 → 启动环境变量。
 
+## 修复/校验工具（tools/fix-websearch-config.mjs）
+
+把 `cordis.patch.yml` 里的网页搜索配置**确定性**修正为「MiniMax 优先 + DeepSeek 停用」，
+并用 DSH 自己的 patch 算法（dsh-app-boot + dsh-base）**自校验**，验证通过才写盘——
+不依赖手改 / AI 是否写对。
+
+```bash
+# 只检查（不改文件）
+node tools/fix-websearch-config.mjs
+# 修正并验证后写盘（幂等，可重复跑）
+node tools/fix-websearch-config.mjs --write
+# 指定文件 / 指定插件版本
+node tools/fix-websearch-config.mjs --patch <cordis.patch.yml> --write --version 1.2.0
+```
+
+它会：删除无效的 `- disable: web-search-deepseek` 写法（loader 会静默忽略它），
+确保 `- id: web`（`config.searchProvider: minimax-coding-plan`）与
+`- id: web-search-deepseek`（`disabled: true`）两条覆盖项存在，并保证它们位于所有
+`- insert:` 块之前（否则会被插件市场的行级解析吞进 insert 块）。退出码：
+`0`=最终状态正确，`1`=不正确（未写盘或验证失败），`2`=运行错误。
+
 ## 工作原理
 
 每次搜索：
