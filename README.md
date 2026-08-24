@@ -29,7 +29,7 @@ DSH 的 `ctx.web` 搜索提供方插件，直连 MiniMax coding-plan 搜索接�
    ```yaml
    - insert:
        - id: dsh-web-search-minimax
-         name: dsh-web-search-minimax-1.2.0
+         name: dsh-web-search-minimax-1.3.0
    ```
 
 3. （可选）把 `web` 行的搜索提供方切到 MiniMax，并停掉 DeepSeek 搜索——注意
@@ -76,26 +76,23 @@ dsh-web-search-minimax → 配置」里写 JSON，例如：
 
 密钥解析优先级：`apiKey`（明文）→ credentials 服务 → 启动环境变量。
 
-## 修复/校验工具（tools/fix-websearch-config.mjs）
+## 配置指南
 
-把 `cordis.patch.yml` 里的网页搜索配置**确定性**修正为「MiniMax 优先 + DeepSeek 停用」，
-并用 DSH 自己的 patch 算法（dsh-app-boot + dsh-base）**自校验**，验证通过才写盘——
-不依赖手改 / AI 是否写对。
+完整配置方法（含「停用 DeepSeek、切到 MiniMax」的两种做法、放置位置、常见坑）见
+[`CONFIGURATION.md`](CONFIGURATION.md)。要点：
 
-```bash
-# 只检查（不改文件）
-node tools/fix-websearch-config.mjs
-# 修正并验证后写盘（幂等，可重复跑）
-node tools/fix-websearch-config.mjs --write
-# 指定文件 / 指定插件版本
-node tools/fix-websearch-config.mjs --patch <cordis.patch.yml> --write --version 1.2.0
-```
+- 只配 MiniMax：插件市场「配置」按钮写 `{ "apiKeyEnv": "MINIMAX_CN_API_KEY" }`（凭据宏，不落明文）。
+- 要停用 DeepSeek：在 `cordis.patch.yml` 所有 `- insert:` 块**之前**加两条覆盖项：
 
-它会：删除无效的 `- disable: web-search-deepseek` 写法（loader 会静默忽略它），
-确保 `- id: web`（`config.searchProvider: minimax-coding-plan`）与
-`- id: web-search-deepseek`（`disabled: true`）两条覆盖项存在，并保证它们位于所有
-`- insert:` 块之前（否则会被插件市场的行级解析吞进 insert 块）。退出码：
-`0`=最终状态正确，`1`=不正确（未写盘或验证失败），`2`=运行错误。
+  ```yaml
+  - id: web
+    config:
+      searchProvider: minimax-coding-plan
+  - id: web-search-deepseek
+    disabled: true
+  ```
+
+  ⚠️ 别写 `- disable: web-search-deepseek`（loader 会静默忽略，DeepSeek 关不掉）。
 
 ## 工作原理
 

@@ -1,6 +1,6 @@
 {
   "name": "dsh-web-search-minimax",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "DSH web search provider over the MiniMax coding-plan direct search API (POST /v1/coding_plan/search)",
   "type": "module",
   "main": "lib/index.js",
