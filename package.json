@@ -1,19 +1,12 @@
 {
   "name": "dsh-web-search-minimax",
-  "version": "1.1.0",
-  "description": "DSH web search provider over the MiniMax coding-plan direct search API (POST /v1/coding_plan/search), with a client card for the Plugins settings section",
+  "version": "1.2.0",
+  "description": "DSH web search provider over the MiniMax coding-plan direct search API (POST /v1/coding_plan/search)",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
-    "./client": "./lib/client.js",
     "./package.json": "./package.json"
-  },
-  "dsh": {
-    "client": {
-      "platform": "web",
-      "immediately": true
-    }
   },
   "files": [
     "lib"

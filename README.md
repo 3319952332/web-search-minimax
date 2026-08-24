@@ -29,7 +29,7 @@ DSH 的 `ctx.web` 搜索提供方插件，直连 MiniMax coding-plan 搜索接�
    ```yaml
    - insert:
        - id: dsh-web-search-minimax
-         name: dsh-web-search-minimax-1.1.0
+         name: dsh-web-search-minimax-1.2.0
    ```
 
 3. （可选）把 `web` 行的搜索提供方切到 MiniMax，并停掉 DeepSeek 搜索——注意
@@ -48,10 +48,18 @@ DSH 的 `ctx.web` 搜索提供方插件，直连 MiniMax coding-plan 搜索接�
    只花一次廉价搜索，延迟约 1 秒。关闭后 DeepSeek 卡片也会从设置页消失（其设置命名空间
    不再被服务）。
 
-4. 重启 DSH 后刷新浏览器：`设置 > 插件 > 插件配置` 会出现「MiniMax 网页搜索」卡片，
-   可直接编辑 `baseURL` 与 API Key。
-
 ## 配置
+
+**用插件市场的「配置」按钮即可**（该插件没有自带设置卡片）：在「设置 → 插件市场 →
+dsh-web-search-minimax → 配置」里写 JSON，例如：
+
+```json
+{ "apiKeyEnv": "MINIMAX_CN_API_KEY", "baseURL": "https://api.minimaxi.com" }
+```
+
+`apiKeyEnv` 是**凭据引用（credential-ref 宏）**，真实密钥存在 DSH 凭据域
+（`~/.dsh/.credentials.yaml`，也可在 Models 页或 `.credentials.yaml` 里写），
+配置文件里只存引用名、不存明文。
 
 设置命名空间：`web-search-minimax`。
 
@@ -77,20 +85,13 @@ DSH 的 `ctx.web` 搜索提供方插件，直连 MiniMax coding-plan 搜索接�
    携带 `Authorization: Bearer <key>`。
 3. 解析响应的 `organic` 结果列表，去重后归一化为 `{ sources, truncated }`。
 
-## 网页设置卡片
+## 历史说明
 
-`lib/client.js` 是本插件的浏览器半边（package.json 声明 `dsh.client.platform: "web"`），
-它把「MiniMax 网页搜索」卡片注册进 `settings.plugin.item`（key = `web-search-minimax`
-命名空间），由 `@deepseek-ai/dsh-client-ui-settings-plugins` 的「插件配置」页渲染。
-
-**不再需要任何 bundle 注入/补丁**：卡片随插件版本化目录一起分发，DSH 更新或 `npx` 重装
-只影响发布包本身，只要 patch 行还在，卡片就一直在。卡片与 DeepSeek 卡片同构（少一个
-`maxUses` 旋钮，因为 MiniMax 直接搜索接口没有每请求搜索次数上限）。
-
-> `patches/` 下两个脚本是旧版（rc.6/rc.7 时代）给 npx 安装的
-> `@deepseek-ai/dsh-client-ui-settings-plugins` 发布包打文本补丁的遗留物。
-> 新版本（0.1.1-rc.2+）里插件自带客户端半边后不再需要它们，保留仅为历史参考，
-> 请勿再运行（它们会尝试修改发布包文件）。
+- **v1.1.0**：曾自带浏览器半边 `lib/client.js`，在「设置 → 插件 → 插件配置」渲染一张
+  MiniMax 配置卡片（免 bundle 注入、随版本分发）。后因市场「配置」按钮 + `apiKeyEnv`
+  凭据引用宏已能覆盖全部配置且无需明文，该卡片被判定冗余，**v1.2.0 起移除**。
+- **v1.0.0 及更早**：`patches/` 下曾有两个给 `@deepseek-ai/dsh-client-ui-settings-plugins`
+  发布包打文本补丁的脚本（rc.6/rc.7 时代），也随本次清理一并删除。
 
 ## License
 
