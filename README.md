@@ -16,7 +16,11 @@ DSH 的 `ctx.web` 搜索提供方插件，直连 MiniMax coding-plan 搜索接�
 
 ## 安装
 
-本机手工安装（与插件市场安装的插件同目录布局）：
+**已发布到 DSH 插件商店（公网注册表 `https://npmstore.sub.opengm.top`）**：
+在 DSH 网页「设置 → 插件市场」搜索 `dsh-web-search-minimax` 一键安装即可，
+配置/更新/卸载都由市场管理。
+
+手工安装（与市场安装同目录布局，一般不需要）：
 
 1. 把本仓库复制为版本化目录：
    `profiles/node_modules/dsh-web-search-minimax-<version>/`
@@ -24,11 +28,13 @@ DSH 的 `ctx.web` 搜索提供方插件，直连 MiniMax coding-plan 搜索接�
 
    ```yaml
    - insert:
-       - id: web-search-minimax
+       - id: dsh-web-search-minimax
          name: dsh-web-search-minimax-1.1.0
    ```
 
-3. （可选）把 `web` 行的搜索提供方切到 MiniMax，并停掉 DeepSeek 搜索：
+3. （可选）把 `web` 行的搜索提供方切到 MiniMax，并停掉 DeepSeek 搜索——注意
+   这两条是非 insert 覆盖项，要放在 `cordis.patch.yml` 所有 `- insert:` 块**之前**
+   （市场的行级解析只按 `- insert:` 切块，放后面会被吞进上一个 insert 块）：
 
    ```yaml
    - id: web
